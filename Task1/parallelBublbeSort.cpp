@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <vector>
 #include <omp.h>
@@ -5,44 +6,51 @@
 #include <thread>
 
 using namespace std;
-vector <int> vec, veccopy;
+vector <int> vec_for_clasic;
+vector <int> even;
+vector <int> odd;
+vector <int> result;
 bool sorted = true;
 
-void evensEl() {
-	int n = vec.size();
-	//for (int i = 0; i < 10; i++)
-	//	cout << "ID = " << this_thread::get_id() << "  Сhet " << i << " " << endl;
-	for (int i = 0; i < n; i++) {
-		if (i % 2 == 0)
-		for (int j = 0; j < n; j += 2)
-			if (j < n - 1)
-				if (vec[j] > vec[j + 1]) {
-					swap(vec[j], vec[j + 1]);
-					sorted = true;
-				}
-	}
+
+void bubble_sort(vector <int>& vec) {
+	int size = vec.size();
+	for (int i = 0; i < size - 1; i++)
+		for (int j = 0; j < size - i - 1; j++)
+			if (vec[j] > vec[j + 1])
+				swap(vec[j], vec[j + 1]);
 }
 
-void oddEl() {
-	int n = vec.size();
-	//for (int i = 0; i < 10; i++)
-	//	cout << "ID = " << this_thread::get_id() << "  Chet " << i << " " << endl;
-	for (int i = 1; i < n; i++) {
-		if (i % 2 != 0)
-			for (int j = 1; j < n; j += 2)
-				if (j < n - 1)
-					if (vec[j] > vec[j + 1]) {
-						swap(vec[j], vec[j + 1]);
-						sorted = true;
-					}
+void mergeVectors() {
+	result.clear();
+	int k = 0;
+	int i = 0;
+	int j = 0;
+	result.resize(even.size() + odd.size());
+	while (i < even.size() && j < odd.size())
+	{
+		if (even[i] <= odd[j]) {
+			result[k++] = even[i++];
+		}
+		else {
+			result[k++] = odd[j++];
+		}
+	}
+	while (i < even.size()) {
+		result[k++] = even[i++];
+	}
+	while (j < odd.size()) {
+		result[k++] = odd[j++];
 	}
 }
 
 void parallelSort() {
-	thread th1(evensEl);
-	thread th2(oddEl);
+	thread th1(bubble_sort, ref(even));
+	thread th2(bubble_sort, ref(odd));
 	th1.join();
 	th2.join();
+	thread th3(mergeVectors);
+	th3.join();
 }
 
 bool unit_test_sort(vector <int> v) {
@@ -52,103 +60,55 @@ bool unit_test_sort(vector <int> v) {
 	return true;
 }
 
-vector <int> generetor(int size) {
-	vector <int> v;
-	for (int i = 0; i < size; i++) v.push_back(rand() % 1000 + 1);
-    return v;
-}
-
-void classicSort() {
-	int n = veccopy.size();
-	for (int i = 0; i <= n - 2; i += 2) {
-		if (veccopy[i] > veccopy[i + 1]) {
-			swap(veccopy[i], veccopy[i + 1]);
-			sorted = true;
-		}
-	}
-	for (int i = 1; i <= n - 2; i += 2) {
-		if (veccopy[i] > veccopy[i + 1]) {
-			swap(veccopy[i], veccopy[i + 1]);
-			sorted = true;
-		}
+void generetor(int size) {
+	even.clear();
+	odd.clear();
+	vec_for_clasic.clear();
+	for (int i = 0; i < size; i++) {
+		int el = rand() % 1000 + 1;
+		if (i % 2 == 0) even.push_back(el);
+		else odd.push_back(el);
+		vec_for_clasic.push_back(el);
 	}
 }
 
 void printTime() {
-	//обычная сортировка
 	double stime, ftime;
 	stime = clock();
-	sorted = true;
-	while (sorted) {
-		sorted = false;
-		classicSort();
-	}
+	bubble_sort(vec_for_clasic);
 	ftime = clock();
 	cout << "Time common sort : " << (ftime - stime) / CLOCKS_PER_SEC << endl;
-	cout << "Test sort: " << unit_test_sort(veccopy) << endl;
+	cout << "Test sort: " << unit_test_sort(vec_for_clasic) << endl;
 	cout.precision(8);
 
-	//соритровка с потоками
-	sorted = true;
 	stime = clock();
-	while (sorted) {
-		sorted = false;
-		parallelSort();
-	}
+	parallelSort();
 	ftime = clock();
 	cout << "Time paralel sort : " << (ftime - stime) / CLOCKS_PER_SEC << endl;
-	cout << "Test sort: " << unit_test_sort(vec) << endl;
+	cout << "Test sort: " << unit_test_sort(result) << endl;
 	cout.precision(8);
 	cout << endl;
 	cout << endl;
 }
 
-//Тест для 10 случайных эл-ов
-void test10(){
-	cout << "---------10-------------" << endl;
-	veccopy = vec = generetor(10);
-	printTime();
-}
-
-//Тест для 100 случайных эл-ов
-void test100() {
-	cout << "---------100-------------" << endl;
-	veccopy = vec = generetor(100);
-	printTime();
-}
-
-//Тест для 1000 случайных эл-ов
-void test1000() {
-	cout << "---------1000-------------" << endl;
-	veccopy = vec = generetor(1000);
-	printTime();
-}
-
-//Тест для 10000 случайных эл-ов
-void test10000() {
-	cout << "---------10000-------------" << endl;
-	veccopy = vec = generetor(10000);
-	printTime();
-}
-
-//Тест для 100000 случайных эл-ов
-void test100000() {
-	cout << "---------100000-------------" << endl;
-	veccopy = vec = generetor(100000);
-	printTime();
-}
-
-void test1000000() {
-	cout << "---------1000000-------------" << endl;
-	veccopy = vec = generetor(1000000);
+void test(int n) {
+	cout << "---------" << n << "---------" << endl;
+	generetor(n);
 	printTime();
 }
 
 int main() {
-	test10();
-	test100();
-	test1000();
-	test10000();
-	test100000();
-	test1000000();
+	test(10);
+	test(100);
+	test(1000);
+	test(10000);
+	test(20000);
+	test(30000);
+	test(40000);
+	test(50000);
+	test(60000);
+	test(70000);
+	test(80000);
+	test(90000);
+	test(100000);
 }
